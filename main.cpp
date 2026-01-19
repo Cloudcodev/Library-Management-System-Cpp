@@ -1,19 +1,19 @@
-/* Project: Library Management System
- * Description: A console-based application to manage book inventory.
+/*Project: Library Management System
+ * Description: Console-based application to manage book inventory.
  * Features:
- * - Add new books (ID, Title, Author, ISBN)
- * - List all books in the database
- * - Search for a book by unique ID
- * - Delete a book record by ID
+ * - Add, List, Search, Delete Books.
+ * - File persistence: Saves data to "library_data.txt" automatically.
+ * Concepts: File I/O (fstream), Vectors, Structs, and Standard Loops.
  */
 
 #include <iostream>
 #include <vector>
 #include <string>
+#include <fstream> // adding header for file handling
 
 using namespace std;
 
-// Represents a single book entity with details
+// represents a single book entity with details
 struct Book {
     int id;
     string title;
@@ -21,21 +21,25 @@ struct Book {
     string isbn;
 };
 
-// Dynamic array to store books in memory during runtime
+// dynamic array to store books in memory during runtime
 vector<Book> library;
+const string FILENAME = "library_data.txt"; // the file where data lives
 
 void displayMenu();
 void addBook();
 void listBooks();
 void searchBook();
-void deleteBook(); // Adding delete function
+void deleteBook(); 
+void saveToFile();  
+void loadFromFile(); 
 
 int main() {
+    loadFromFile(); //loading existing data immediately when program starts
     int choice;
     
     do {
         displayMenu();
-        // Keeps looping until user enters the right number.
+        // keeps looping until user enters the right number.
         while (true) {
             cout << "Enter your choice: ";
             if (cin >> choice) {
@@ -46,7 +50,7 @@ int main() {
                 }
             } else {
                 cout << "Invalid input. Please enter a number." << endl;
-                cin.clear(); // Reset the error flag on cin
+                cin.clear(); // reset the error flag on cin
                 cin.ignore(10000, '\n');  
             }
         }
@@ -62,10 +66,11 @@ int main() {
                 searchBook(); 
                 break;
             case 4:
-                deleteBook(); // New case
+                deleteBook(); 
                 break;       
             case 5:
-                cout << "Exiting system...\n" << endl;
+                saveToFile(); //saving data before exiting
+                cout << "Exiting system.\n" << endl;
                 break;
         }
     } while (choice != 5);
@@ -79,7 +84,7 @@ void displayMenu() {
     cout << "2. List All Books" << endl;
     cout << "3. Search Book by ID" << endl;
     cout << "4. Delete Book" << endl; 
-    cout << "5. Exit" << endl;
+    cout << "5. Save & Exit" << endl; //updated line
 }
 
 void addBook() {
@@ -92,14 +97,12 @@ void addBook() {
         cin.ignore(10000, '\n');
     }
     
-    cin.ignore(); // Clearing buffer
+    cin.ignore(); // clearing buffer
 
     cout << "Enter Book Title: ";
     getline(cin, newBook.title);
-
     cout << "Enter Author Name: ";
     getline(cin, newBook.author);
-
     cout << "Enter ISBN: ";
     getline(cin, newBook.isbn);
 
@@ -128,16 +131,13 @@ void searchBook() {
     cin >> searchID;
     
     bool found = false;
-    // Loop to traverse the library vector efficiently
-    for (const auto& book : library) {
-        if (book.id == searchID) {
-            cout << "\nBook found!" << endl;
-            cout << "ID: " << book.id << endl;
-            cout << "Title: " << book.title << endl;
-            cout << "ISBN: " << book.isbn << endl;
-            cout << "-------------------------" << endl;
+    // loop to traverse the library vector efficiently
+    for (int i = 0; i < library.size(); i++) {
+        if (library[i].id == searchID) {
+            cout << "\nBook Found:\n";
+            cout << "ID: " << library[i].id << " | Title: " << library[i].title << endl;
             found = true;
-            break; // Exit loop immediately once found
+            break;
         }
     }
     if (!found) {
@@ -145,7 +145,6 @@ void searchBook() {
     }
 }
 
-// Added new function
 void deleteBook() {
     int deleteID;
     cout << "\nEnter Book ID to delete: ";
@@ -155,13 +154,52 @@ void deleteBook() {
     
     for (int i = 0; i < library.size(); i++) {
         if (library[i].id == deleteID) {
-            library.erase(library.begin() + i); // Deleting the book at position i
+            library.erase(library.begin() + i); // deleting the book at position i
             cout << "Book with ID '" << deleteID << "' has been deleted.\n" << endl;
             found = true;
-            break; // Stopping the loop when found and deleted
+            break; // stopping the loop when found and deleted
         }
     }
     if (!found) {
-        cout << "Book with ID " << deleteID << " not found.\n" << endl;
+        cout << "Book with ID " << deleteID << " not found." << endl;
     }
+}
+
+// saves all books to a text file
+void saveToFile() {
+    ofstream outFile(FILENAME); // opens file for writing
+    
+    if (outFile.is_open()) {
+        for (int i = 0; i < library.size(); i++) {
+            //writing each property using the index
+            outFile << library[i].id << endl;
+            outFile << library[i].title << endl;
+            outFile << library[i].author << endl;
+            outFile << library[i].isbn << endl;
+        }
+        outFile.close();
+        cout << "Data saved successfully to " << FILENAME << endl;
+    } else {
+        cout << "Error: Could not save data!" << endl;
+    }
+}
+
+// loads books from the text file into memory
+void loadFromFile() {
+    ifstream inFile(FILENAME); // opens file for reading
+    if (!inFile) {
+        return; // if file doesn't exist, return
+    }
+
+    Book book;
+    // Keep reading as long as we find a Book ID
+    while (inFile >> book.id) {
+        inFile.ignore(); // skip the newline character after the ID
+        getline(inFile, book.title);
+        getline(inFile, book.author);
+        getline(inFile, book.isbn);
+        library.push_back(book); // adding the loaded book to our list
+    }
+    inFile.close();
+    cout << "Data loaded from file. " << library.size() << " books found.\n";
 }
